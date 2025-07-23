@@ -1,5 +1,5 @@
 # Explicit primitives
-> attempt at readable typed primitives for Typescript
+> attempt at readable typed primitives for Typescript.   
 > Draft: Ongoing document
 
 ## You like Effect?
@@ -106,7 +106,7 @@ class CalculatorService extends Service<CalculatorContext> {
         return this.ctx.add(a, b);
     },
 
-    divide: (a: number, b number) {
+    divide: (a: number, b: number) {
         return this.ctx.divide(a, b)
     }
 }
@@ -120,7 +120,7 @@ calculator.add(1, 2) // => 3
 calculator.divide(5, 2) // => 2.5
 
 /**
- * Could have direclty
+ * Could have directly
  * been called as follow
  */
 const calculator = new CalculatorService({
@@ -263,7 +263,7 @@ const result = mainProgram.run({ calculatorService });
 // => 2.5
 
 /**
- * Let's catch erors
+ * Let's catch errors
  */
 const mainProgram = Program.prepare<MainContext>(
     ({ ctx }) => ctx.calculatorService.divide(5, 0), 
@@ -283,12 +283,12 @@ const result = mainProgram.run({ calculatorService });
 
 /**
  * What happened?
- * We've safely captured at a higher level errors
+ * We've safely captured errors at a higher level
  * originating from the shared service.
  */
 
 /**
- * What can be this "program"?
+ * What can this "program" be?
  * Well just a function.
  */
 const safelyDivide = (a: number, b: number) => Program.prepare<MainContext>(
@@ -347,4 +347,4 @@ which encapsulate a function call with access to a provided context
 ## How explicit can it be?
 
 I'll elaborate later.   
-For now, [check out the >100 LOC](./index.ts).
+For now, [check out the <100 LOC](./index.ts).
