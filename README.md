@@ -1,8 +1,8 @@
-# Explicit (not another lib)
-> copy/paste readable typed primitives for Typescript
+# Explicit Building Blocks → Copy / Paste
+typescript building blocks you can easily read/understand
 
 ```ts
-import { Program, type Context } from '..';
+import { Program, type Context } from './index.ts';
 
 // requirements
 type LoggerContext = Context<{ log: (message: string) => void }>
@@ -24,10 +24,10 @@ Check out transposed examples from "Effect by Example" by [Ethan Niser](https://
 
 Or you may want to [check out the source code (≈130 LOC)](./index.ts).
 
-## You like Effect?
+## Like Effect? Without Effect.
 Like any good developer I've been following the trend around a tool like **Effect** (like **fp-ts**) which advocate for full-type safety accross a composable toolkit.  
 
-The main attractive primitives that it offers are:
+The main attractive components that it offers are:
 - typed controled flow
 - typed errors
 - typed dependency injection
@@ -50,24 +50,24 @@ While I love the promise - and have had my time in the fp paradigme - I just hat
 
 Also again, what it gives is **beautiful**. A sense of control all-the-way.
 
-## Being explicit
+## Stay explicit
 > **Explicit:** fully revealed or expressed without vagueness, implication, or ambiguity : leaving no question as to meaning or intent.
 
 I suppose we all expect our programs to be that way. While following standards we've all tried to re-invent the wheel to *find-a-better-way*.
 
-Last weekend I've spent some time rethinking the need for primitives and how these could exist without what frustrates me in existing solutions.
+Last weekend I've spent some time rethinking the need for building blocks and how these could exist without what frustrates me in existing solutions.
 
 Maybe:
 - we don't need functional programming
-- primitives definitions can remain readable
-- *most of* what we need is just 3 primitives away
+- building blocks can remain readable pieces of code
+- *most of* what we need is just 3-4 tiny blocks away
 
-## Primitives
+## Building Blocks
 ### 1. Context
 Typing requirements / available features
 ```ts
 /**
- * Context primitive definition
+ * Context definition
  * (slightly simplified)
  */ 
 type ContextRequirements = KV<Error | Service | unknown>
@@ -109,7 +109,7 @@ const CalculatorContext: CalculatorContext = {
 Abstract a set of features based on a context
 ```ts
 /**
- * Service primitive definition
+ * Service definition
  * (simplified with context only)
  */
 class Service<Ctx extends Context = Context> {
@@ -209,7 +209,7 @@ type ErrorKeys<T> = { [K in keyof T]: T[K] extends Constructor<Error> ? K : neve
 type ErrorHandlers<Ctx extends Context> = { [K in (ErrorKeys<Ctx> | 'Any')]?: (err: Error) => void | Promise<void> };
 
 /**
- * Program primitive type definition
+ * Program type definition
  * - ctx: current context
  * - controller/signal: for control flow
  * - catch: for error handling
