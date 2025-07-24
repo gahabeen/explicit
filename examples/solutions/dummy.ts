@@ -1,8 +1,8 @@
-import { type Context, Program, Service, TaggedError } from "../..";
+import { type Context, Program, Service, Data } from "../..";
 
 // dummy example, playing around
 
-class FetchSpecificError extends TaggedError.create("FetchSpecificError") { }
+class FetchSpecificError extends Data.NamedError("FetchSpecificError") { }
 type FetchContext = Context<
     { fetch: (url: string, options?: RequestInit) => Promise<Response>; },
     [FetchSpecificError]
@@ -14,8 +14,8 @@ class FetchService extends Service<FetchContext> {
     }
 }
 
-class CrashError extends TaggedError.create("CrashError") { }
-class NetworkError extends TaggedError.create("NetworkError") { }
+class CrashError extends Data.NamedError("CrashError") { }
+class NetworkError extends Data.NamedError("NetworkError") { }
 
 type MainContext = Context<{
     hello: (name: string) => Promise<string>;
@@ -24,7 +24,7 @@ type MainContext = Context<{
 
 const fetchService = new FetchService({ fetch, FetchSpecificError });
 
-const MainProgram = Program.prepare<MainContext>(async ({ ctx }) => {
+const mainProgram = Program.prepare<MainContext>(async ({ ctx }) => {
     const result = await ctx.hello("World")
     throw new CrashError({ message: "Simulated crash" });
     console.log(result);
@@ -34,7 +34,7 @@ const MainProgram = Program.prepare<MainContext>(async ({ ctx }) => {
     }
 });
 
-MainProgram.run({
+mainProgram.run({
     hello: async (name: string) => `Hello, ${name}!`,
     fetchService,
     CrashError,

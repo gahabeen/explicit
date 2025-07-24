@@ -1,6 +1,28 @@
-# Explicit primitives
-> attempt at readable typed primitives for Typescript.   
-> Draft: Ongoing document
+# Explicit (not another lib)
+> copy/paste readable typed primitives for Typescript
+
+```ts
+import { Program, type Context } from '..';
+
+// requirements
+type LoggerContext = Context<{ log: (message: string) => void }>
+
+// encapsulated function
+const main = Program.prepare<LoggerContext>(({ ctx }) => {
+    ctx.log("Hello World")
+});
+
+// execute with custom dependencies
+main.run({ log: console.log });
+```
+
+Check out transposed examples from "Effect by Example" by [Ethan Niser](https://github.com/ethanniser):
+- [Hello World](./examples//effect-by-example/hello-world.ts)
+- [Non-Effect Interop](./examples/effect-by-example/non-effect-interop.ts)
+
+[→ see more examples](./examples/)
+
+Or you may want to [check out the source code (≈130 LOC)](./index.ts).
 
 ## You like Effect?
 Like any good developer I've been following the trend around a tool like **Effect** (like **fp-ts**) which advocate for full-type safety accross a composable toolkit.  
@@ -347,4 +369,4 @@ which encapsulate a function call with access to a provided context
 ## How explicit can it be?
 
 I'll elaborate later.   
-For now, [check out the <100 LOC](./index.ts).
+For now, [check out the <150 LOC](./index.ts).

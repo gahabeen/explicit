@@ -1,8 +1,8 @@
-import { type Context, Service, TaggedError } from "../..";
+import { type Context, Service, Data } from "../..";
 
 // errors
-export class FetchNetworkError extends TaggedError.create('FetchNetworkError') { }
-export class FetchParseError extends TaggedError.create('FetchParseError') { }
+export class FetchNetworkError extends Data.NamedError('FetchNetworkError') { }
+export class FetchParseError extends Data.NamedError('FetchParseError') { }
 
 // context
 export type FetchContext = Context<{

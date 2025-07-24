@@ -1,4 +1,3 @@
-
 type Constructor<T = any> = new (...args: any[]) => T;
 type Key = string | number | symbol;
 type KV<V = any> = Record<Key, V>;
@@ -23,13 +22,17 @@ type Program<Ctx extends Context = Context> = {
     ctx: Ctx;
 }
 
-export const TaggedError = {
-    create<Tag extends string>(tag: Tag) {
+export const Data = {
+    NamedError<Name extends string>(name: Name) {
         return class <A extends Record<string, any> = {}> extends Error {
-            override readonly name: Tag = tag;
-            constructor(args?: (A & { message?: string; parent?: any }) | { message?: string; parent?: any }) {
-                super(args?.message);
-                this.name = tag;
+            override readonly name: Name = name;
+            readonly meta: A;
+            constructor(args?: (A & { message?: string; cause?: unknown }) | { message?: string; cause?: unknown }) {
+                const { message, cause, ...meta } = args || {};
+                super(message);
+                this.name = name;
+                this.cause = cause;
+                this.meta = meta as A;
                 Object.setPrototypeOf(this, new.target.prototype);
             }
         };
@@ -37,6 +40,24 @@ export const TaggedError = {
 }
 
 export const Program = {
+    tryCatch<Ctx extends Context>(prog: Program<Ctx>, fn: (prog: Program<Ctx>) => any, handlers?: ErrorHandlers<Ctx>): unknown {
+        const handleError = (error: unknown) => {
+            if (error instanceof Error) {
+                const handler = handlers?.[error.name as keyof ErrorHandlers<Ctx>] || handlers?.Any;
+                if (handler) {
+                    return handler(error);
+                }
+            }
+            throw error;
+        }
+
+        try {
+            const result = fn(prog);
+            return result instanceof Promise ? result.catch(handleError) : result;
+        } catch (error: unknown) {
+            return handleError(error);
+        }
+    },
     create<Ctx extends Context>(context: Ctx): Program<Ctx> {
         const program: Program<Ctx> = {
             controller: new AbortController(),
@@ -45,42 +66,65 @@ export const Program = {
             tryCatch: () => void 0,
         };
 
-        program.tryCatch = (fn: (prog: Program<Ctx>) => any, handlers?: ErrorHandlers<Ctx>) => {
-            const handleError = (error: unknown) => {
-                if (error instanceof Error) {
-                    const handler = handlers?.[error.name as keyof ErrorHandlers<Ctx>] || handlers?.Any;
-                    if (handler) {
-                        return handler(error);
-                    }
-                }
-                throw error;
-            }
-
-            try {
-                const result = fn(program);
-                return result instanceof Promise ? result.catch(handleError) : result;
-            } catch (error: unknown) {
-                return handleError(error);
-            }
-        };
+        program.tryCatch = ((fn, handlers) => Program.tryCatch(program, fn, handlers));
 
         return program;
     },
-    prepare<Ctx extends Context, Fn extends (prog: Program<Ctx>) => any = (prog: Program<Ctx>) => any>(fn: Fn, handlers?: ErrorHandlers<Ctx>) {
+    prepare<Ctx extends Context = Context, Fn extends (prog: Program<Ctx>) => any = (prog: Program<Ctx>) => any>(fn: Fn, handlers?: ErrorHandlers<Ctx>) {
         const program = Program.create<Ctx>({} as Ctx);
+        let _handlers: ErrorHandlers<Ctx> = handlers || {};
+
+        const run = (ctx?: Ctx) => {
+            program.ctx = ctx || program.ctx;
+            return program.tryCatch(fn, _handlers);
+        }
+
+        const provide = (ctx?: Ctx) => {
+            program.ctx = ctx || program.ctx;
+            return { run };
+        }
+
+        const catchFn = (handlers: ErrorHandlers<Ctx>) => {
+            _handlers = { ..._handlers, ...handlers };
+            return { run };
+        }
 
         return {
-            run: (ctx: Ctx) => {
-                program.ctx = ctx;
-                return program.tryCatch(fn, handlers);
-            },
+            catch: catchFn,
+            provide,
+            run,
         }
     },
 }
 
 export class Service<Ctx extends Context = Context> {
     protected prog: Program<Ctx>;
-    constructor(context: Ctx) {
-        this.prog = Program.create<Ctx>(context);
+    constructor(context?: Ctx) {
+        this.prog = Program.create<Ctx>(context || {} as Ctx);
+
+        (this as any).acquire?.();
+        (this as any).acquireAsync?.();
+    }
+
+    [Symbol.dispose]() {
+        return (this as any).dispose?.();
+    }
+    [Symbol.asyncDispose]() {
+        return (this as any).disposeAsync?.();
+    }
+
+    static use<T extends KV<Service>>(kv: T) {
+        return {
+            ...kv,
+            [Symbol.dispose]() {
+                for (const service of Object.values(kv)) {
+                    service[Symbol.dispose]?.();
+                }
+            },
+            [Symbol.asyncDispose]() {
+                return Promise.allSettled(Object.values(kv)
+                    .map(service => service[Symbol.asyncDispose]?.() || Promise.resolve()));
+            }
+        } as unknown as FlattenUnion<T & { [Symbol.dispose](): void;[Symbol.asyncDispose](): Promise<void> }>;
     }
 }
